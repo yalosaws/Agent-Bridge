@@ -164,6 +164,11 @@ def test_appends_bridge_cordis_when_missing(monkeypatch, tmp_path: Path):
     assert rewritten[:3] == ["dsh-acp-demo", "--config", str(bundled_dsh_cordis())]
 
 
+def test_keeps_native_dsh_acp_profile_without_bridge_cordis():
+    command = ["dsh", "--profile", "acp"]
+    assert with_bridge_cordis(command) == command
+
+
 def test_keeps_explicit_custom_cordis(tmp_path: Path):
     custom = str(tmp_path / "mine.yml")
     rewritten = with_bridge_cordis(["dsh-acp-demo", "--config", custom])
@@ -237,6 +242,22 @@ def test_discovers_explicit_bin_and_harness_checkout(tmp_path: Path, monkeypatch
     found = discovered_dsh_acp_commands()
     assert [explicit] == [Path(cmd[-1]) for cmd in found[:1]]
     assert any(Path(cmd[-1]) == built for cmd in found)
+
+
+def test_discovers_native_dsh_acp_before_legacy_demo(monkeypatch, tmp_path: Path):
+    monkeypatch.delenv("DSH_ACP_BIN", raising=False)
+    monkeypatch.delenv("DSH_HARNESS", raising=False)
+    monkeypatch.delenv("DEEPSEEK_HARNESS", raising=False)
+    monkeypatch.delenv("DSH_CHECKOUT", raising=False)
+    monkeypatch.setattr(
+        "agent_bridge.dsh_home.dsh_builtin_acp_command",
+        lambda: ["dsh", "--profile", "acp"],
+    )
+    monkeypatch.setattr("agent_bridge.dsh_home.dsh_acp_install_dir", lambda home=None: tmp_path / "absent")
+    monkeypatch.setattr("agent_bridge.dsh_home.npm_global_prefixes", lambda: [])
+    monkeypatch.setattr("agent_bridge.dsh_home.shutil.which", lambda name: None)
+    found = discovered_dsh_acp_commands()
+    assert found[0] == ["dsh", "--profile", "acp"]
 
 
 def test_unbuilt_checkout_without_tsx_is_ignored(tmp_path: Path, monkeypatch):
