@@ -214,6 +214,9 @@ def test_unwraps_windows_npm_shim(tmp_path: Path, monkeypatch):
     js = tmp_path / "node_modules" / "@deepseek-ai" / "dsh-acp-demo" / "lib" / "bin.js"
     js.parent.mkdir(parents=True)
     js.write_text("console.log(1)\n", encoding="utf-8")
+    native_js = tmp_path / "node_modules" / "@deepseek-ai" / "dsh" / "lib" / "bin.js"
+    native_js.parent.mkdir(parents=True)
+    native_js.write_text("console.log(2)\n", encoding="utf-8")
     shim = tmp_path / "dsh-acp-demo.cmd"
     shim.write_text("@echo off\n", encoding="utf-8")
     monkeypatch.setattr("agent_bridge.dsh_home.shutil.which", lambda name: "C:/node.exe" if name == "node" else None)

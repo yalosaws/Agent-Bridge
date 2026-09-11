@@ -222,7 +222,7 @@ def unwrap_native_dsh_npm_shim(command: list[str]) -> list[str] | None:
     if not command:
         return None
     first = Path(command[0])
-    if first.suffix.lower() not in {".cmd", ".bat"}:
+    if first.name.lower() not in {"dsh.cmd", "dsh.bat"}:
         return None
     node = shutil.which("node")
     if not node:
