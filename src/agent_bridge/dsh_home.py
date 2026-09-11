@@ -217,8 +217,28 @@ def unwrap_npm_shim(command: list[str]) -> list[str] | None:
     return None
 
 
+def unwrap_native_dsh_npm_shim(command: list[str]) -> list[str] | None:
+    """Turn a native dsh Windows npm shim into its Node entry point."""
+    if not command:
+        return None
+    first = Path(command[0])
+    if first.suffix.lower() not in {".cmd", ".bat"}:
+        return None
+    node = shutil.which("node")
+    if not node:
+        return None
+    candidates = [
+        first.parent / "node_modules" / "@deepseek-ai" / "dsh" / "lib" / "bin.js",
+        first.parent.parent / "@deepseek-ai" / "dsh" / "lib" / "bin.js",
+    ]
+    for js in candidates:
+        if js.is_file():
+            return [node, str(js), *command[1:]]
+    return None
+
+
 def canonicalize_dsh_command(command: list[str]) -> list[str]:
-    return unwrap_npm_shim(command) or command
+    return unwrap_native_dsh_npm_shim(command) or unwrap_npm_shim(command) or command
 
 
 def dsh_command_problem(command: list[str]) -> str | None:
@@ -425,7 +445,7 @@ def with_bridge_cordis(command: list[str]) -> list[str]:
     # Current dsh owns the ACP profile and its complete plugin composition.
     # Passing the legacy bridge cordis file would make the new launcher reject
     # the unsupported --config argument and would mix incompatible plugin eras.
-    if len(command) >= 3 and command[1:3] == ["--profile", "acp"]:
+    if any(command[index : index + 2] == ["--profile", "acp"] for index in range(len(command) - 1)):
         return command
     cordis = str(dsh_cordis_for_launch(command))
     rewritten = []
